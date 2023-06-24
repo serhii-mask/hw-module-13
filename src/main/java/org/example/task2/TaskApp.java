@@ -37,18 +37,21 @@ public class TaskApp {
         return null;
     }
 
-    public static List<PostEntity> printAllCommentsLastPost(int postId) {
-
+    public static String printAllCommentsLastPost(int userId) {
+        List<UserEntity> openTasks = getOpenTasksForUser(userId);
+        int postId = openTasks.size();
         String url = BASE_URL + "/posts/" + postId + "/comments";
 
         HttpGet request = new HttpGet(url);
+
         try {
             HttpResponse response = httpClient.execute(request);
             int statusCode = response.getStatusLine().getStatusCode();
+
             if (statusCode == HttpStatus.SC_OK) {
                 String responseBody = EntityUtils.toString(response.getEntity());
-                PostEntity[] tasks = gson.fromJson(responseBody, PostEntity[].class);
-                return Arrays.asList(tasks);
+                writeCommentsToFile(userId, postId, responseBody);
+                return responseBody;
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -57,11 +60,10 @@ public class TaskApp {
         return null;
     }
 
-    private static void saveCommentsToFile(String commentsJson, String fileName) {
-        try {
-            FileWriter fileWriter = new FileWriter(fileName);
+    static void writeCommentsToFile(int userId, int postId, String commentsJson) {
+        String fileName = "user-" + userId + "-post-" + postId + "-comments.json";
+        try (FileWriter fileWriter = new FileWriter(fileName)) {
             fileWriter.write(commentsJson);
-            fileWriter.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
